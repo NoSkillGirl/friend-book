@@ -1,0 +1,286 @@
+openapi: 3.0.1
+info:
+  title: defaultTitle
+  description: defaultDescription
+  version: "1.2"
+servers:
+  - url: "http://127.0.0.1:8000"
+paths:
+  /api/login:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                password:
+                  type: string
+                email:
+                  type: string
+            examples:
+              "0":
+                value: "{\n\t\"email\": \"Alex2@gmail.com\",\n\t\"password\": \"verysecretpassword\"\n}\n"
+              "1":
+                value: "{\n\t\"email\": \"Alex2@gmail.com\",\n\t\"password\": \"verysecretpassword\"\n}\n"
+              "2":
+                value: "{\n\t\"email\": \"Alex2gmail.com\",\n\t\"password\": \"verysecretpassword\"\n}\n"
+              "3":
+                value: "{\n\t\"email\": \"Alex2.com\",\n\t\"password\": \"verysecretpassword\"\n}\n"
+              "4":
+                value: "{\n\t\"email\": \"Alex2@gmail.com\",\n\t\"password\": \"\"\n}\n"
+              "5":
+                value: "{\n\t\"email\": \"Alex2@gmail.com\",\n\t\"password\": \"verysecretpassw\"\n}\n"
+              "6":
+                value: "{\n\t\"email\": \"Alex2@gmail.com\",\n\t\"password\": \"verysecretpassword\"\n}\n"
+      responses:
+        "200":
+          description: Auto generated using Swagger Inspector
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  auth_token:
+                    type: string
+              examples:
+                "0":
+                  value: >
+                    {"auth_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdXRob3JpemVkIjp0cnVlLCJleHAiOjE1ODUyNTM3NDgsInVzZXJJRCI6IjgifQ.h0kTb46ffNS2mCC-rO2ziAOvL5vkmxYojMqWPnlpPoY"}
+        "401":
+          description: Auto generated using Swagger Inspector
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: integer
+                      message:
+                        type: string
+                      type:
+                        type: string
+              examples:
+                "0":
+                  value: >
+                    {"error":{"message":"User login failed. Incorrect
+                    Password","type":"Unauthorized","code":401}}
+        "422":
+          description: Auto generated using Swagger Inspector
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: integer
+                      message:
+                        type: string
+                      type:
+                        type: string
+              examples:
+                "0":
+                  value: >
+                    {"error":{"message":"Invalid
+                    email-id","type":"ValidationError","code":422}}
+                "1":
+                  value: >
+                    {"error":{"message":"One ore more required fields are
+                    missing.","type":"ValidationError","code":422}}
+        "500":
+          description: Auto generated using Swagger Inspector
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: integer
+                      message:
+                        type: string
+                      type:
+                        type: string
+              examples:
+                "0":
+                  value: >
+                    {"error":{"message":"Failed to generate Auth
+                    token","type":"InternalServerError","code":500}}
+                "1":
+                  value: >
+                    {"error":{"message":"User login
+                    failed.","type":"InternalServerError","code":500}}
+                "2":
+                  value: >
+                    {"error":{"message":"Unable to Parse Request
+                    Body","type":"InternalServerError","code":500}}
+      servers:
+        - url: "http://127.0.0.1:8000"
+    servers:
+      - url: "http://127.0.0.1:8000"
+  /api/health:
+    get:
+      description: Auto generated using Swagger Inspector
+      responses:
+        "200":
+          description: Auto generated using Swagger Inspector
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+              examples:
+                "0":
+                  value: |
+                    {"ok":true}
+      servers:
+        - url: "http://127.0.0.1:8000"
+    servers:
+      - url: "http://127.0.0.1:8000"
+  /api/signup:
+    post:
+      description: Auto generated using Swagger Inspector
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                phone_no:
+                  type: string
+                password:
+                  type: string
+                name:
+                  type: string
+                email:
+                  type: string
+            examples:
+              "0":
+                value: "{\n\t\"name\": \"Alex5\",\n\t\"email\": \"Alex5@gmail.com\",\n\t\"phone_no\": \"8073807903\",\n\t\"password\": \"verysecretpassword\"\n}"
+              "1":
+                value: "{\n\t\"name\": \"Alex5\",\n\t\"email\": \"Alex5@gmail.com\",\n\t\"phone_no\": \"8073807903\",\n\t\"password\": \"verysecretpassword\"\n}"
+              "2":
+                value: "{\n\t\"name\": \"\",\n\t\"email\": \"Alex@gmail.com\",\n\t\"phone_no\": \"8073807303\",\n\t\"password\": \"verysecretpassword\"\n}"
+              "3":
+                value: "{\n\t\"name\": \"Alex\",\n\t\"email\": \"Alex@gmail.com\",\n\t\"phone_no\": \"8073807303\",\n\t\"password\": \"verysecretpassword\"\n}"
+              "4":
+                value: "{\n\t\"name\": \"Alex2\",\n\t\"email\": \"Alex2@gmail.com\",\n\t\"phone_no\": \"8003hbhjvb\",\n\t\"password\": \"verysecretpassword\"\n}"
+              "5":
+                value: "{\n\t\"name\": \"Alex1\",\n\t\"email\": \"Alex1.com\",\n\t\"phone_no\": \"8003807303\",\n\t\"password\": \"verysecretpassword\"\n}"
+              "6":
+                value: "{\n\t\"name\": \"Alex1\",\n\t\"email\": \"Alex1@gmail.com\",\n\t\"phone_no\": \"8003807303\",\n\t\"password\": \"verysecretpassword\"\n}"
+              "7":
+                value: "{\n\t\"name\": \"Alex\",\n\t\"email\": \"Alex@gmail.com\",\n\t\"phone_no\": \"8073807303\",\n\t\"password\": \"verysecretpassword\"\n}"
+              "8":
+                value: "{\n\t\"name\": \"Alex\",\n\t\"email\": \"Alex@gmail.com\",\n\t\"phone_no\": \"8073807303\",\n\t\"password\": \"verysecretpassword\"\n}"
+      responses:
+        "200":
+          description: Auto generated using Swagger Inspector
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+              examples:
+                "0":
+                  value: |
+                    {"success":true}
+        "409":
+          description: Auto generated using Swagger Inspector
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: integer
+                      message:
+                        type: string
+                      type:
+                        type: string
+              examples:
+                "0":
+                  value: >
+                    {"error":{"message":"Looks like you have already registered.
+                    Try logging in","type":"AlreadyRegistered","code":409}}
+        "422":
+          description: Auto generated using Swagger Inspector
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: integer
+                      message:
+                        type: string
+                      type:
+                        type: string
+              examples:
+                "0":
+                  value: >
+                    {"error":{"message":"One ore more required fields are
+                    missing.","type":"ValidationError","code":422}}
+                "1":
+                  value: >
+                    {"error":{"message":"Invalid phone
+                    number","type":"ValidationError","code":422}}
+                "2":
+                  value: >
+                    {"error":{"message":"Invalid
+                    email-id","type":"ValidationError","code":422}}
+        "500":
+          description: Auto generated using Swagger Inspector
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: integer
+                      message:
+                        type: string
+                      type:
+                        type: string
+              examples:
+                "0":
+                  value: >
+                    {"error":{"message":"User signup
+                    failed.","type":"InternalServerError","code":500}}
+                "1":
+                  value: >
+                    {"error":{"message":"Unable to create a salt of your
+                    password","type":"InternalServerError","code":500}}
+                "2":
+                  value: >
+                    {"error":{"message":"Unable to Parse Request
+                    Body","type":"InternalServerError","code":500}}
+                "3":
+                  value: >
+                    {"error":{"message":"User signup
+                    failed.","type":"InternalServerError","code":500}}
+      servers:
+        - url: "http://127.0.0.1:8000"
+    servers:
+      - url: "http://127.0.0.1:8000"
