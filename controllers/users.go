@@ -67,6 +67,7 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	userID, err := strconv.Atoi(userIDString)
 
 	if err != nil {
+		log.Println("UpdateUser", err)
 		resp.Error.Message = "Unable to parse userID"
 		resp.Error.Type = constants.ErrorInternalServerError
 		resp.Error.Code = http.StatusInternalServerError
@@ -78,6 +79,7 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	// Req Decode
 	err = json.NewDecoder(r.Body).Decode(&reqJSON)
 	if err != nil {
+		log.Println(err)
 		fmt.Println(err)
 		resp.Error.Message = "Unable to Parse Request Body"
 		resp.Error.Type = constants.ErrorInternalServerError
@@ -102,6 +104,7 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	if reqJSON.Password != "" {
 		passwordSalt, err = hashPassword(reqJSON.Password)
 		if err != nil {
+			log.Println(err)
 			resp.Error.Message = "Unable to create a salt of your password"
 			resp.Error.Type = constants.ErrorInternalServerError
 			resp.Error.Code = http.StatusInternalServerError
@@ -114,6 +117,7 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	errType, err := models.UpdateUser(ctx, userID, reqJSON.Name, reqJSON.PhoneNo, passwordSalt)
 
 	if err != nil {
+		log.Println(err)
 		if errType == constants.ErrorDatabaseUpdateZeroRowsAffected {
 			resp.Error.Message = "Looks like database is already up to date"
 			resp.Error.Type = constants.ErrorDatabaseUpdateZeroRowsAffected
@@ -177,6 +181,7 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	userID, err := strconv.Atoi(userIDString)
 
 	if err != nil {
+		log.Println("DeleteUser", err)
 		resp.Error.Message = "Unable to parse userID"
 		resp.Error.Type = constants.ErrorInternalServerError
 		resp.Error.Code = http.StatusInternalServerError
@@ -188,6 +193,7 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	errType, err := models.DeleteUser(ctx, userID)
 
 	if err != nil {
+		log.Println(err)
 		log.Println("Error Occured while deleting the user", errType, err)
 		resp.Error.Message = "Error Occured while deleting the user"
 		resp.Error.Type = constants.ErrorInternalServerError
@@ -243,6 +249,7 @@ func ShowUser(w http.ResponseWriter, r *http.Request) {
 	userID, err := strconv.Atoi(userIDString)
 
 	if err != nil {
+		log.Println("ShowUser", err)
 		resp.Error.Message = "Unable to parse userID"
 		resp.Error.Type = constants.ErrorInternalServerError
 		resp.Error.Code = http.StatusInternalServerError
@@ -254,6 +261,7 @@ func ShowUser(w http.ResponseWriter, r *http.Request) {
 	user, errType, err := models.GetUser(ctx, userID)
 
 	if err != nil {
+		log.Println(err)
 		if errType == constants.ErrorDatabaseUserNotFound {
 			resp.Error.Message = "This user doesn't exist in our database, please check your user id!"
 			resp.Error.Type = constants.ErrorDatabaseUserNotFound
@@ -312,6 +320,7 @@ func FriendRequest(w http.ResponseWriter, r *http.Request) {
 	userID, err := strconv.Atoi(userIDString)
 
 	if err != nil {
+		log.Println("FriendRequest", err)
 		resp.Error.Message = "Unable to parse userID"
 		resp.Error.Type = constants.ErrorInternalServerError
 		resp.Error.Code = http.StatusInternalServerError
@@ -327,6 +336,7 @@ func FriendRequest(w http.ResponseWriter, r *http.Request) {
 	// Req Decode
 	err = json.NewDecoder(r.Body).Decode(&reqJSON)
 	if err != nil {
+		log.Println(err)
 		fmt.Println(err)
 		resp.Error.Message = "Unable to Parse Request Body"
 		resp.Error.Type = constants.ErrorInternalServerError
@@ -362,6 +372,7 @@ func FriendRequest(w http.ResponseWriter, r *http.Request) {
 	errType, err := models.FriendRequest(ctx, userID, reqJSON.FriendEmailID)
 
 	if err != nil {
+		log.Println(err)
 		if errType == constants.ErrorDatabaseUserNotFound {
 			resp.Error.Message = "Your friend doesn't exist in our database!"
 			resp.Error.Type = constants.ErrorDatabaseUserNotFound
@@ -388,33 +399,58 @@ func FriendRequest(w http.ResponseWriter, r *http.Request) {
 }
 
 // ////////////////////////////////////////////////////////////////////////////////////////////////////
-// type SearchUser struct {
-// 	ID      int    `json:"id"`
-// 	Name    string `json:"name"`
-// 	EmailID string `json:"email_id"`
-// 	PhoneNo string `json:"phone_no"`
-// }
+type SearchUser struct {
+	ID      int    `json:"id"`
+	Name    string `json:"name"`
+	EmailID string `json:"email_id"`
+	PhoneNo string `json:"phone_no"`
+}
 
-// type SearchResponse struct {
-// 	Message string       `json:"message"`
-// 	Users   []SearchUser `json:"users"`
-// }
+type SearchResponse struct {
+	Data []models.Friend `json:"data"`
+}
 
-// func Search(w http.ResponseWriter, r *http.Request) {
-// 	// vars := mux.Vars(r)
-// 	// w.WriteHeader(http.StatusOK)
-// 	// userID := vars["user_id"]
-// 	resp := SearchResponse{}
+func Search(w http.ResponseWriter, r *http.Request) {
 
-// 	u, serverErr := models.Search()
-// 	if serverErr == true {
-// 		resp.Message = "Unsuccessful. Internal Server Error"
-// 	} else {
-// 		resp.Message = "Successful"
-// 	}
-// 	resp.Friends = f
-// 	json.NewEncoder(w).Encode(resp)
-// }
+	ctx := context.Background()
+	var name, email, phoneNo string
+	nameArr, ok := r.URL.Query()["name"]
+	if !(!ok || len(nameArr[0]) < 1) {
+		name = nameArr[0]
+	}
+
+	emailArr, ok := r.URL.Query()["email"]
+	if !(!ok || len(emailArr[0]) < 1) {
+		email = emailArr[0]
+	}
+
+	phoneNoArr, ok := r.URL.Query()["phone_no"]
+	if !(!ok || len(phoneNoArr[0]) < 1) {
+		phoneNo = phoneNoArr[0]
+	}
+
+	resp := ErrorResponse{}
+	w.Header().Set("Content-Type", "application/json")
+
+	data, errType, err := models.Search(ctx, name, email, phoneNo)
+
+	if err != nil {
+		log.Println("Search - ", data, errType, err)
+		resp.Error.Message = "Unable to search"
+		resp.Error.Type = constants.ErrorInternalServerError
+		resp.Error.Code = http.StatusInternalServerError
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(resp)
+		return
+
+	}
+
+	successResp := SearchResponse{
+		Data: data,
+	}
+
+	json.NewEncoder(w).Encode(successResp)
+}
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 type FriendRequestsID struct {
@@ -447,6 +483,7 @@ func FriendRequests(w http.ResponseWriter, r *http.Request) {
 	userID, err := strconv.Atoi(userIDString)
 
 	if err != nil {
+		log.Println("FriendRequests", err)
 		resp.Error.Message = "Unable to parse userID"
 		resp.Error.Type = constants.ErrorInternalServerError
 		resp.Error.Code = http.StatusInternalServerError
@@ -458,6 +495,7 @@ func FriendRequests(w http.ResponseWriter, r *http.Request) {
 	data, errType, err := models.FriendRequests(ctx, userID)
 
 	if err != nil {
+		log.Println(err)
 		log.Println("FriendRequests - ", data, errType, err)
 		if errType == constants.ErrorDatabaseUserNotFound {
 			resp.Error.Message = "Your friend doesn't exist in our database!"
@@ -519,6 +557,7 @@ func ActOnFriendRequest(w http.ResponseWriter, r *http.Request) {
 	userID, err := strconv.Atoi(userIDString)
 
 	if err != nil {
+		log.Println("ActOnFriendRequest", err)
 		resp.Error.Message = "Unable to parse userID"
 		resp.Error.Type = constants.ErrorInternalServerError
 		resp.Error.Code = http.StatusInternalServerError
@@ -532,6 +571,7 @@ func ActOnFriendRequest(w http.ResponseWriter, r *http.Request) {
 	// Req Decode
 	err = json.NewDecoder(r.Body).Decode(&reqJSON)
 	if err != nil {
+		log.Println(err)
 		fmt.Println(err)
 		resp.Error.Message = "Unable to Parse Request Body"
 		resp.Error.Type = constants.ErrorInternalServerError
@@ -579,6 +619,7 @@ func ActOnFriendRequest(w http.ResponseWriter, r *http.Request) {
 	log.Println(data, errType, err)
 
 	if err != nil {
+		log.Println(err)
 		if errType == constants.ErrorDatabaseUpdateZeroRowsAffected {
 			resp.Error.Message = "All these friend requests are already accepted/rejected"
 			resp.Error.Type = constants.ErrorDatabaseUserNotFound
@@ -628,6 +669,7 @@ func RemoveFriend(w http.ResponseWriter, r *http.Request) {
 	userID, err := strconv.Atoi(userIDString)
 
 	if err != nil {
+		log.Println("RemoveFriend", err)
 		resp.Error.Message = "Unable to parse userID"
 		resp.Error.Type = constants.ErrorInternalServerError
 		resp.Error.Code = http.StatusInternalServerError
@@ -641,6 +683,7 @@ func RemoveFriend(w http.ResponseWriter, r *http.Request) {
 	// Req Decode
 	err = json.NewDecoder(r.Body).Decode(&reqJSON)
 	if err != nil {
+		log.Println(err)
 		fmt.Println(err)
 		resp.Error.Message = "Unable to Parse Request Body"
 		resp.Error.Type = constants.ErrorInternalServerError
@@ -677,6 +720,7 @@ func RemoveFriend(w http.ResponseWriter, r *http.Request) {
 	log.Println(errType, err)
 
 	if err != nil {
+		log.Println(err)
 		if errType == constants.ErrorDatabaseUserNotFound {
 			resp.Error.Message = "You don't have a friend with this emailID"
 			resp.Error.Type = constants.ErrorDatabaseUserNotFound

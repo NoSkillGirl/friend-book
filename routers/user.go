@@ -10,6 +10,8 @@ func UserRoutes(apiRouter *mux.Router) {
 
 	v1Router := apiRouter.PathPrefix("/v1.0").Subrouter()
 
+	v1Router.Handle("/search", controllers.IsAuthorized(controllers.Search)).Methods("GET")
+
 	v1Router.Handle("/me", controllers.IsAuthorized(controllers.ShowUser)).Methods("GET")
 
 	v1Router.Handle("/{user_id}", controllers.IsAuthorized(controllers.ShowUser)).Methods("GET")
@@ -30,7 +32,4 @@ func UserRoutes(apiRouter *mux.Router) {
 
 	v1Router.Handle("/me/friend/delete", controllers.IsAuthorized(controllers.RemoveFriend)).Methods("DELETE")
 
-	// v1Router.Handle("/me/delete_friend_request", controllers.IsAuthorized(controllers.DeleteUser)).Methods("DELETE")
-
-	// v1Router.HandleFunc("/search", controllers.Search).Methods("GET")
 }

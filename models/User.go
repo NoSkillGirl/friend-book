@@ -12,6 +12,9 @@ import (
 
 	"github.com/NoSkillGirl/friend-book/constants"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/jinzhu/gorm"
+	"github.com/vcraescu/go-paginator"
+	"github.com/vcraescu/go-paginator/adapter"
 )
 
 var (
@@ -21,7 +24,7 @@ var (
 
 const mySQLHost = "localhost"
 
-var mySQLConnection = fmt.Sprintf("root:password@tcp(%s)/friend_book", mySQLHost)
+var mySQLConnection = fmt.Sprintf("root:@tcp(%s)/friend_book", mySQLHost)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 type User struct {
@@ -37,6 +40,7 @@ type User struct {
 func DeleteUser(ctx context.Context, userID int) (errType string, err error) {
 	db, err := sql.Open("mysql", mySQLConnection)
 	if err != nil {
+		log.Println(err)
 		return constants.ErrorDatabaseConnection, err
 	}
 	defer db.Close()
@@ -44,6 +48,7 @@ func DeleteUser(ctx context.Context, userID int) (errType string, err error) {
 	delForm, err := db.Prepare("delete from users where id=?")
 	_, err = delForm.Exec(userID)
 	if err != nil {
+		log.Println(err)
 		return constants.ErrorDatabaseDelete, err
 	}
 
@@ -54,6 +59,7 @@ func DeleteUser(ctx context.Context, userID int) (errType string, err error) {
 func FriendRequest(ctx context.Context, userID int, friendemailID string) (errType string, err error) {
 	db, err := sql.Open("mysql", mySQLConnection)
 	if err != nil {
+		log.Println(err)
 		return constants.ErrorDatabaseConnection, err
 	}
 	defer db.Close()
@@ -64,6 +70,7 @@ func FriendRequest(ctx context.Context, userID int, friendemailID string) (errTy
 	err = db.QueryRow("select id from users where email_id = ?", friendemailID).Scan(&friendID)
 
 	if err != nil {
+		log.Println(err)
 		return constants.ErrorDatabaseUserNotFound, err
 	}
 
@@ -74,6 +81,7 @@ func FriendRequest(ctx context.Context, userID int, friendemailID string) (errTy
 	)
 
 	if err != nil {
+		log.Println(err)
 		log.Println("Error occured while inserting friend request details in the database", err)
 		return constants.ErrorDatabaseInsert, err
 	}
@@ -90,32 +98,57 @@ type Friend struct {
 	PhoneNo string `json:"phone_no"`
 }
 
-func Search() (users []Friend, serverErr bool) {
-	db, err := sql.Open("mysql", mySQLConnection)
+type dbUser struct {
+	ID       int    `json:"id"`
+	Name     string `json:"name"`
+	EmailID  string `json:"email_id"`
+	PhoneNo  string `json:"phone_no"`
+	Password string `json:"password"`
+}
+
+func Search(ctx context.Context, name string, email string, phoneNo string) (users []Friend, errType string, err error) {
+	db, err := gorm.Open("mysql", mySQLConnection)
 	if err != nil {
-		fmt.Println(err)
-		return users, true
+		log.Println(err)
+		return users, constants.ErrorDatabaseConnection, err
 	}
 	defer db.Close()
 
-	search, err := db.Query(`select * from users`)
-	if err != nil {
-		fmt.Println(err)
-		return users, true
+	q := db.Model(User{})
+
+	if name != "" {
+		q.Where("name like '?'", name)
 	}
-	defer search.Close()
 
-	for search.Next() {
-		u := Friend{}
-		err = search.Scan(&u.ID, &u.Name, &u.EmailID, &u.PhoneNo)
+	if email != "" {
+		q.Where("email_id like '?'", email)
+	}
 
-		if err != nil {
-			fmt.Println(err)
-			return users, true
+	if phoneNo != "" {
+		q.Where("phone_no like '?'", phoneNo)
+	}
+
+	p := paginator.New(adapter.NewGORMAdapter(q), 10)
+
+	p.SetPage(4)
+
+	var dbUsers []User
+
+	if err = p.Results(&dbUsers); err != nil {
+		return users, constants.ErrorDatabaseSelect, err
+	}
+
+	for _, dbUser := range dbUsers {
+		f := Friend{
+			ID:      dbUser.ID,
+			Name:    dbUser.Name,
+			EmailID: dbUser.EmailID,
+			PhoneNo: dbUser.PhoneNo,
 		}
-		users = append(users, u)
+		users = append(users, f)
 	}
-	return users, false
+
+	return users, "", nil
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -127,6 +160,7 @@ type FriendRequestsResponse struct {
 func FriendRequests(ctx context.Context, userID int) (requestIDs []FriendRequestsResponse, errType string, err error) {
 	db, err := sql.Open("mysql", mySQLConnection)
 	if err != nil {
+		log.Println(err)
 		return requestIDs, constants.ErrorDatabaseConnection, err
 	}
 	defer db.Close()
@@ -137,6 +171,7 @@ func FriendRequests(ctx context.Context, userID int) (requestIDs []FriendRequest
 	)
 
 	if err != nil {
+		log.Println(err)
 		return requestIDs, constants.ErrorDatabaseSelect, err
 	}
 	defer search.Close()
@@ -148,6 +183,7 @@ func FriendRequests(ctx context.Context, userID int) (requestIDs []FriendRequest
 		err = search.Scan(&ID)
 
 		if err != nil {
+			log.Println(err)
 			return requestIDs, constants.ErrorDatabaseSelect, err
 		}
 		friendIDs = append(friendIDs, ID)
@@ -158,6 +194,7 @@ func FriendRequests(ctx context.Context, userID int) (requestIDs []FriendRequest
 	search, err = db.Query(queryString)
 
 	if err != nil {
+		log.Println(err)
 		return requestIDs, constants.ErrorDatabaseSelect, err
 	}
 	defer search.Close()
@@ -167,6 +204,7 @@ func FriendRequests(ctx context.Context, userID int) (requestIDs []FriendRequest
 		err = search.Scan(&frr.ID, &frr.Email)
 
 		if err != nil {
+			log.Println(err)
 			return requestIDs, constants.ErrorDatabaseSelect, err
 		}
 		requestIDs = append(requestIDs, frr)
@@ -180,6 +218,7 @@ func FriendRequests(ctx context.Context, userID int) (requestIDs []FriendRequest
 func GetUser(ctx context.Context, userID int) (user User, errType string, err error) {
 	db, err := sql.Open("mysql", mySQLConnection)
 	if err != nil {
+		log.Println(err)
 		return user, constants.ErrorDatabaseConnection, err
 	}
 	defer db.Close()
@@ -187,6 +226,7 @@ func GetUser(ctx context.Context, userID int) (user User, errType string, err er
 	err = db.QueryRow("select name, email_id, phone_no from users where id = ?", userID).Scan(&user.Name, &user.EmailID, &user.PhoneNo)
 
 	if err != nil {
+		log.Println(err)
 		return user, constants.ErrorDatabaseUserNotFound, err
 	}
 
@@ -196,6 +236,7 @@ func GetUser(ctx context.Context, userID int) (user User, errType string, err er
 	search, err := db.Query(queryString)
 
 	if err != nil {
+		log.Println(err)
 		return user, constants.ErrorDatabaseSelect, err
 	}
 	defer search.Close()
@@ -206,6 +247,7 @@ func GetUser(ctx context.Context, userID int) (user User, errType string, err er
 		err = search.Scan(&friendID)
 
 		if err != nil {
+			log.Println(err)
 			return user, constants.ErrorDatabaseSelect, err
 		}
 		friendIDs = append(friendIDs, friendID)
@@ -219,6 +261,7 @@ func GetUser(ctx context.Context, userID int) (user User, errType string, err er
 	search, err = db.Query(queryString)
 
 	if err != nil {
+		log.Println(err)
 		return user, constants.ErrorDatabaseSelect, err
 	}
 	defer search.Close()
@@ -228,6 +271,7 @@ func GetUser(ctx context.Context, userID int) (user User, errType string, err er
 		err = search.Scan(&friend.ID, &friend.Name, &friend.EmailID, &friend.PhoneNo)
 
 		if err != nil {
+			log.Println(err)
 			return user, constants.ErrorDatabaseSelect, err
 		}
 		friends = append(friends, friend)
@@ -242,6 +286,7 @@ func GetUser(ctx context.Context, userID int) (user User, errType string, err er
 func UpdateUser(ctx context.Context, userID int, name string, phoneNo string, password string) (errType string, err error) {
 	db, err := sql.Open("mysql", mySQLConnection)
 	if err != nil {
+		log.Println(err)
 		return constants.ErrorDatabaseConnection, err
 	}
 	defer db.Close()
@@ -268,10 +313,12 @@ func UpdateUser(ctx context.Context, userID int, name string, phoneNo string, pa
 
 	result, err := db.ExecContext(ctx, queryBuilder)
 	if err != nil {
+		log.Println(err)
 		return constants.ErrorDatabaseUpdate, err
 	}
 	rows, err := result.RowsAffected()
 	if err != nil {
+		log.Println(err)
 		return constants.ErrorDatabaseUpdate, err
 	}
 	if rows != 1 {
@@ -290,6 +337,7 @@ type ActOnFriendRequestResponse struct {
 func ActOnFriendRequest(ctx context.Context, userID int, emailIDs []string, action string) (data []ActOnFriendRequestResponse, errType string, err error) {
 	db, err := sql.Open("mysql", mySQLConnection)
 	if err != nil {
+		log.Println(err)
 		return data, constants.ErrorDatabaseConnection, err
 	}
 	defer db.Close()
@@ -307,6 +355,7 @@ func ActOnFriendRequest(ctx context.Context, userID int, emailIDs []string, acti
 	search, err := db.Query(queryString)
 
 	if err != nil {
+		log.Println(err)
 		return data, constants.ErrorDatabaseSelect, err
 	}
 	defer search.Close()
@@ -319,6 +368,7 @@ func ActOnFriendRequest(ctx context.Context, userID int, emailIDs []string, acti
 		err = search.Scan(&friendID, &friendEmail)
 
 		if err != nil {
+			log.Println(err)
 			return data, constants.ErrorDatabaseSelect, err
 		}
 		friendIDs = append(friendIDs, friendID)
@@ -332,6 +382,7 @@ func ActOnFriendRequest(ctx context.Context, userID int, emailIDs []string, acti
 	err = db.QueryRow(queryString).Scan(&count)
 
 	if err != nil {
+		log.Println(err)
 		return data, constants.ErrorDatabaseUpdate, err
 	}
 
@@ -344,10 +395,12 @@ func ActOnFriendRequest(ctx context.Context, userID int, emailIDs []string, acti
 
 	result, err := db.ExecContext(ctx, query)
 	if err != nil {
+		log.Println(err)
 		return data, constants.ErrorDatabaseUpdate, err
 	}
 	rows, err := result.RowsAffected()
 	if err != nil {
+		log.Println(err)
 		return data, constants.ErrorDatabaseUpdate, err
 	}
 	if rows == 0 {
@@ -368,6 +421,7 @@ func ActOnFriendRequest(ctx context.Context, userID int, emailIDs []string, acti
 func RemoveFriend(ctx context.Context, userID int, emailID string) (errType string, err error) {
 	db, err := sql.Open("mysql", mySQLConnection)
 	if err != nil {
+		log.Println(err)
 		return constants.ErrorDatabaseConnection, err
 	}
 	defer db.Close()
@@ -376,6 +430,7 @@ func RemoveFriend(ctx context.Context, userID int, emailID string) (errType stri
 	err = db.QueryRow("select id from users where email_id = ?", emailID).Scan(&friendID)
 
 	if err != nil {
+		log.Println(err)
 		return constants.ErrorDatabaseUserNotFound, err
 	}
 
@@ -384,11 +439,13 @@ func RemoveFriend(ctx context.Context, userID int, emailID string) (errType stri
 
 	result, err := db.ExecContext(ctx, query)
 	if err != nil {
+		log.Println(err)
 		return constants.ErrorDatabaseUpdate, err
 	}
 
 	_, err = result.RowsAffected()
 	if err != nil {
+		log.Println(err)
 		return constants.ErrorDatabaseUpdate, err
 	}
 	return "", nil

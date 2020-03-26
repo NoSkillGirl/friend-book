@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"regexp"
 	"strings"
@@ -64,6 +65,7 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 	// Req Decode
 	err := json.NewDecoder(r.Body).Decode(&reqJSON)
 	if err != nil {
+		log.Println(err)
 		fmt.Println(err)
 		resp.Error.Message = "Unable to Parse Request Body"
 		resp.Error.Type = constants.ErrorInternalServerError
@@ -108,6 +110,7 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 	//converting password to salt
 	passwordSalt, err := hashPassword(reqJSON.Password)
 	if err != nil {
+		log.Println(err)
 		resp.Error.Message = "Unable to create a salt of your password"
 		resp.Error.Type = constants.ErrorInternalServerError
 		resp.Error.Code = http.StatusInternalServerError
@@ -119,6 +122,7 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 	// calling model
 	errType, err := models.SignUp(ctx, reqJSON.Name, reqJSON.EmailID, reqJSON.PhoneNo, passwordSalt)
 	if err != nil {
+		log.Println(err)
 		if errType == constants.ErrorDatabaseDuplicate {
 			resp.Error.Message = "Looks like you have already registered. Try logging in"
 			resp.Error.Type = constants.ErrorAlreadyRegistered
@@ -168,6 +172,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	// Req Decode
 	err := json.NewDecoder(r.Body).Decode(&reqJSON)
 	if err != nil {
+		log.Println(err)
 		fmt.Println(err)
 		resp.Error.Message = "Unable to Parse Request Body"
 		resp.Error.Type = constants.ErrorInternalServerError
@@ -202,6 +207,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	//calling model
 	userID, passwordSalt, errType, err := models.Login(ctx, reqJSON.EmailID, reqJSON.Password)
 	if err != nil {
+		log.Println(err)
 		if errType == constants.ErrorDatabaseEmailNotFound {
 			resp.Error.Message = "Your email doesn't exist in our database, please check your email id!"
 			resp.Error.Type = constants.ErrorDatabaseEmailNotFound
@@ -233,6 +239,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	//generating JWT
 	validToken, err := generateJWT(userID)
 	if err != nil {
+		log.Println(err)
 		resp.Error.Message = "Failed to generate Auth token"
 		resp.Error.Type = constants.ErrorInternalServerError
 		resp.Error.Code = http.StatusInternalServerError
@@ -267,6 +274,7 @@ func generateJWT(userID string) (string, error) {
 	tokenString, err := token.SignedString([]byte(userID))
 
 	if err != nil {
+		log.Println(err)
 		fmt.Errorf("Something Went Wrong: %s", err.Error())
 		return "", err
 	}
@@ -294,6 +302,7 @@ func IsAuthorized(endpoint func(http.ResponseWriter, *http.Request)) http.Handle
 			})
 
 			if err != nil {
+				log.Println(err)
 				fmt.Fprintf(w, err.Error())
 			}
 

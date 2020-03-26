@@ -16,6 +16,7 @@ func Login(ctx context.Context, emailID, password string) (userID string, passwo
 
 	db, err := sql.Open("mysql", mySQLConnection)
 	if err != nil {
+		log.Println(err)
 		return userID, passwordSalt, constants.ErrorDatabaseConnection, err
 	}
 	defer db.Close()
@@ -23,6 +24,7 @@ func Login(ctx context.Context, emailID, password string) (userID string, passwo
 	err = db.QueryRow("select id, password from users where email_id = ?", emailID).Scan(&userID, &passwordSalt)
 
 	if err != nil {
+		log.Println(err)
 		return userID, passwordSalt, constants.ErrorDatabaseEmailNotFound, err
 	}
 
@@ -34,6 +36,7 @@ func SignUp(ctx context.Context, name, emailID, phoneNo, password string) (typeO
 
 	db, err := sql.Open("mysql", mySQLConnection)
 	if err != nil {
+		log.Println(err)
 		return constants.ErrorDatabaseConnection, err
 	}
 	defer db.Close()
@@ -42,6 +45,7 @@ func SignUp(ctx context.Context, name, emailID, phoneNo, password string) (typeO
 	err = db.QueryRowContext(ctx, "select count(*) from users where email_id=? or phone_no=?", emailID, phoneNo).Scan(&count)
 
 	if err != nil {
+		log.Println(err)
 		return constants.ErrorDatabaseSelect, err
 	}
 
@@ -55,6 +59,7 @@ func SignUp(ctx context.Context, name, emailID, phoneNo, password string) (typeO
 	)
 
 	if err != nil {
+		log.Println(err)
 		log.Println("Error occured while inserting user details in the database", err)
 		return constants.ErrorDatabaseInsert, err
 	}
