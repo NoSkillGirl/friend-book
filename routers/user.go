@@ -20,9 +20,13 @@ func UserRoutes(apiRouter *mux.Router) {
 
 	v1Router.Handle("/me/delete", controllers.IsAuthorized(controllers.DeleteUser)).Methods("DELETE")
 
-	v1Router.Handle("/user_id/delete", controllers.IsAuthorized(controllers.DeleteUser)).Methods("DELETE")
+	v1Router.Handle("/{user_id}/delete", controllers.IsAuthorized(controllers.DeleteUser)).Methods("DELETE")
 
-	// v1Router.Handle("/me/friend_request", controllers.IsAuthorized(controllers.FriendRequest)).Methods("POST")
+	v1Router.Handle("/me/friend_request", controllers.IsAuthorized(controllers.FriendRequest)).Methods("POST")
+
+	v1Router.Handle("/me/friend_request", controllers.IsAuthorized(controllers.ActOnFriendRequest)).Methods("PUT")
+
+	v1Router.Handle("/me/friend_requests", controllers.IsAuthorized(controllers.FriendRequests)).Methods("GET")
 
 	// v1Router.Handle("/me/delete_friend_request", controllers.IsAuthorized(controllers.DeleteUser)).Methods("DELETE")
 
