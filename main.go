@@ -9,12 +9,19 @@ import (
 	"github.com/gorilla/mux"
 )
 
+const (
+	STATIC_DIR = "/assets/"
+)
+
 func main() {
 	router := mux.NewRouter()
+	router.
+		PathPrefix(STATIC_DIR).
+		Handler(http.StripPrefix(STATIC_DIR, http.FileServer(http.Dir("."+STATIC_DIR))))
 
 	apiRouter := router.PathPrefix("/api").Subrouter()
 
-	routers.AuthRoutes(apiRouter)
+	routers.AuthRoutes(router, apiRouter)
 	routers.UserRoutes(apiRouter)
 
 	http.Handle("/", router)

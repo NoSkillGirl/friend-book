@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"regexp"
@@ -65,8 +66,7 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 	// Req Decode
 	err := json.NewDecoder(r.Body).Decode(&reqJSON)
 	if err != nil {
-		log.Println(err)
-		fmt.Println(err)
+		log.Println("Signup - ", err)
 		resp.Error.Message = "Unable to Parse Request Body"
 		resp.Error.Type = constants.ErrorInternalServerError
 		resp.Error.Code = http.StatusInternalServerError
@@ -145,6 +145,13 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 	successResponse.Success = true
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(successResponse)
+}
+
+func GetSignUpPage(w http.ResponseWriter, r *http.Request) {
+	err := renderHTML(w, "register")
+	if err != nil {
+		renderHTML(w, "404")
+	}
 }
 
 //
@@ -256,6 +263,18 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
+type GetLoginPageTemplateData struct {
+	StaticDir string `protobuf:"bytes,1,opt,name=static_dir,json=staticDir,proto3" json:"static_dir,omitempty"`
+}
+
+// GetLoginPage - for html page
+func GetLoginPage(w http.ResponseWriter, r *http.Request) {
+	err := renderHTML(w, "login")
+	if err != nil {
+		renderHTML(w, "404")
+	}
+}
+
 // HealthCheck - health check endpoint
 func HealthCheck(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
@@ -326,4 +345,39 @@ func validEmailID(emailID string) bool {
 func validPhoneNo(phoneNo string) bool {
 	r := regexp.MustCompile(`^(?:(?:\(?(?:00|\+)([1-4]\d\d|[1-9]\d?)\)?)?[\-\.\ \\\/]?)?((?:\(?\d{1,}\)?[\-\.\ \\\/]?){0,})(?:[\-\.\ \\\/]?(?:#|ext\.?|extension|x)[\-\.\ \\\/]?(\d+))?$`)
 	return r.MatchString(phoneNo)
+}
+
+func renderHTML(w http.ResponseWriter, templateName string) error {
+	dir := "views"
+
+	templateData := GetLoginPageTemplateData{
+		StaticDir: "/",
+	}
+	templates := make(map[string]*template.Template)
+
+	if _, ok := templates[templateName]; !ok {
+		tmpl, err := template.New(fmt.Sprintf("%s.tmpl.html", templateName)).ParseFiles(fmt.Sprintf("%s/%s.tmpl.html", dir, templateName))
+		if err != nil {
+		}
+		templates[templateName] = tmpl
+	}
+
+	tmpl := templates[templateName]
+
+	if err := tmpl.Execute(w, encode(templateData)); err != nil {
+
+	}
+	return nil
+}
+
+func encode(v interface{}) interface{} {
+	data, err := json.Marshal(v)
+	if err != nil {
+		panic(err)
+	}
+	var v2 interface{}
+	if err := json.Unmarshal(data, &v2); err != nil {
+		panic(err)
+	}
+	return v2
 }
