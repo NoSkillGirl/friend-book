@@ -15,22 +15,26 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+//hashPassword - func to convert the password to salt
 func hashPassword(password string) (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
 	return string(bytes), err
 }
 
+//checkPasswordHash - func to comaper the password and salt
 func checkPasswordHash(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	return err == nil
 }
 
+// GenericErrorResponse - struct for error
 type GenericErrorResponse struct {
 	Message string `json:"message"`
 	Type    string `json:"type"`
 	Code    int    `json:"code"`
 }
 
+//ErrorResponse - struct for error
 type ErrorResponse struct {
 	Error GenericErrorResponse `json:"error"`
 }
@@ -48,12 +52,12 @@ type SignupResponse struct {
 	Success bool `json:"success"`
 }
 
+//Signup - function to handle the user signup
 func Signup(w http.ResponseWriter, r *http.Request) {
 
 	ctx := context.Background()
 	// Req Obj
 	var reqJSON SignupRequest
-
 	resp := ErrorResponse{}
 	w.Header().Set("Content-Type", "application/json")
 
@@ -83,7 +87,7 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 	//validating email-id
 	emailValidation := validEmailID(reqJSON.EmailID)
 	if emailValidation == false {
-		resp.Error.Message = "Unsuccessful. Invalid email-id"
+		resp.Error.Message = "Invalid email-id"
 		resp.Error.Type = constants.ErrorValidation
 		resp.Error.Code = http.StatusUnprocessableEntity
 		w.WriteHeader(http.StatusUnprocessableEntity)
@@ -101,8 +105,8 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	//converting password to salt
 	passwordSalt, err := hashPassword(reqJSON.Password)
-
 	if err != nil {
 		resp.Error.Message = "Unable to create a salt of your password"
 		resp.Error.Type = constants.ErrorInternalServerError
@@ -112,6 +116,7 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// calling model
 	errType, err := models.SignUp(ctx, reqJSON.Name, reqJSON.EmailID, reqJSON.PhoneNo, passwordSalt)
 	if err != nil {
 		if errType == constants.ErrorDatabaseDuplicate {
@@ -138,21 +143,24 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(successResponse)
 }
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//LoginRequest - struct
 type LoginRequest struct {
 	EmailID  string `json:"email"`
 	Password string `json:"password"`
 }
 
+//LoginResponse - struct
 type LoginResponse struct {
 	AuthToken string `json:"auth_token"`
 }
 
+//Login - function to handle the user login
 func Login(w http.ResponseWriter, r *http.Request) {
+
 	ctx := context.Background()
 	// Req Obj
 	var reqJSON LoginRequest
-
 	// Res Obj
 	resp := ErrorResponse{}
 	w.Header().Set("Content-Type", "application/json")
@@ -179,6 +187,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(resp)
 		return
 	}
+
 	//validating email-id
 	emailValidation := validEmailID(reqJSON.EmailID)
 	if emailValidation == false {
@@ -190,8 +199,8 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	//calling model
 	userID, passwordSalt, errType, err := models.Login(ctx, reqJSON.EmailID, reqJSON.Password)
-
 	if err != nil {
 		if errType == constants.ErrorDatabaseEmailNotFound {
 			resp.Error.Message = "Your email doesn't exist in our database, please check your email id!"
@@ -210,8 +219,8 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	//matching password and salt
 	match := checkPasswordHash(reqJSON.Password, passwordSalt)
-
 	if !match {
 		resp.Error.Message = "User login failed. Incorrect Password"
 		resp.Error.Type = constants.ErrorStatusUnauthorized
@@ -221,6 +230,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	//generating JWT
 	validToken, err := generateJWT(userID)
 	if err != nil {
 		resp.Error.Message = "Failed to generate Auth token"
@@ -237,7 +247,6 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(successResponse)
 	return
-
 }
 
 // HealthCheck - health check endpoint
@@ -265,6 +274,7 @@ func generateJWT(userID string) (string, error) {
 	return tokenString, nil
 }
 
+// IsAuthorized - function to check the authorization and handle the function
 func IsAuthorized(endpoint func(http.ResponseWriter, *http.Request)) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
@@ -297,11 +307,13 @@ func IsAuthorized(endpoint func(http.ResponseWriter, *http.Request)) http.Handle
 	})
 }
 
+//validEmailID - function o validate email-id
 func validEmailID(emailID string) bool {
 	r := regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
 	return r.MatchString(emailID)
 }
 
+//validPhoneNo - function to validate phone number
 func validPhoneNo(phoneNo string) bool {
 	r := regexp.MustCompile(`^(?:(?:\(?(?:00|\+)([1-4]\d\d|[1-9]\d?)\)?)?[\-\.\ \\\/]?)?((?:\(?\d{1,}\)?[\-\.\ \\\/]?){0,})(?:[\-\.\ \\\/]?(?:#|ext\.?|extension|x)[\-\.\ \\\/]?(\d+))?$`)
 	return r.MatchString(phoneNo)

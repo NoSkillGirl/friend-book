@@ -11,7 +11,9 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
+//Login function
 func Login(ctx context.Context, emailID, password string) (userID string, passwordSalt string, errType string, err error) {
+
 	db, err := sql.Open("mysql", mySQLConnection)
 	if err != nil {
 		return userID, passwordSalt, constants.ErrorDatabaseConnection, err
@@ -29,13 +31,11 @@ func Login(ctx context.Context, emailID, password string) (userID string, passwo
 
 //SignUp function
 func SignUp(ctx context.Context, name, emailID, phoneNo, password string) (typeOfError string, err error) {
+
 	db, err := sql.Open("mysql", mySQLConnection)
-	// if there is an error opening the connection, handle it
 	if err != nil {
 		return constants.ErrorDatabaseConnection, err
 	}
-
-	// defer the close till after the main function has finished executing
 	defer db.Close()
 
 	var count int
