@@ -21,7 +21,7 @@ var (
 
 const mySQLHost = "localhost"
 
-var mySQLConnection = fmt.Sprintf("root:@tcp(%s)/friend_book", mySQLHost)
+var mySQLConnection = fmt.Sprintf("root:password@tcp(%s)/friend_book", mySQLHost)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 type User struct {
@@ -132,7 +132,7 @@ func FriendRequests(ctx context.Context, userID int) (requestIDs []FriendRequest
 	defer db.Close()
 
 	search, err := db.Query(
-		`select friend_id from friend_requests where requestor_id = ? and status = "pending"`,
+		`select requestor_id from friend_requests where friend_id = ? and status = "pending"`,
 		userID,
 	)
 
