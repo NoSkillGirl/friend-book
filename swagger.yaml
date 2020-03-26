@@ -147,7 +147,7 @@ paths:
         - url: "http://127.0.0.1:8000"
     servers:
       - url: "http://127.0.0.1:8000"
-  /api/signup:
+  /api/register:
     post:
       description: Auto generated using Swagger Inspector
       requestBody:

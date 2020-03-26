@@ -9,7 +9,6 @@ require (
 	github.com/google/uuid v1.1.1
 	github.com/gorilla/mux v1.7.4
 	github.com/jinzhu/gorm v1.9.12
-	github.com/okcredit/go-common v1.7.8
 	github.com/vcraescu/go-paginator v0.0.0-20200304054438-86d84f27c0b3
 	golang.org/x/crypto v0.0.0-20200323165209-0ec3e9974c59
 )
