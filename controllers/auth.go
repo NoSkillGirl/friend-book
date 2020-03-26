@@ -134,6 +134,7 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 	// Res Obj
 	successResponse := SignupResponse{}
 	successResponse.Success = true
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(successResponse)
 }
 
@@ -233,9 +234,16 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	successResponse := LoginResponse{
 		AuthToken: string(validToken),
 	}
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(successResponse)
 	return
 
+}
+
+// HealthCheck - health check endpoint
+func HealthCheck(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]bool{"ok": true})
 }
 
 func generateJWT(userID string) (string, error) {

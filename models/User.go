@@ -3,10 +3,12 @@ package models
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
 	//mysql
 
+	"github.com/NoSkillGirl/friend-book/constants"
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -28,41 +30,21 @@ type User struct {
 	Password string
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////
-func UpdateUser(userID int, name string, phoneNo string, password string) (serverErr bool) {
-	db, err := sql.Open("mysql", mySQLConnection)
-	if err != nil {
-		fmt.Println(err)
-		return true
-	}
-	defer db.Close()
-
-	insForm, err := db.Prepare("update users set name=?, phone_no=?, password=? where id=?")
-	_, err = insForm.Exec(name, phoneNo, password, userID)
-	if err != nil {
-		fmt.Println(err)
-		return true
-	}
-	return false
-}
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-func DeleteUser(userID int) (serverErr bool) {
+func DeleteUser(ctx context.Context, userID int) (errType string, err error) {
 	db, err := sql.Open("mysql", mySQLConnection)
 	if err != nil {
-		fmt.Println(err)
-		return true
+		return constants.ErrorDatabaseConnection, err
 	}
 	defer db.Close()
 
 	delForm, err := db.Prepare("delete from users where id=?")
 	_, err = delForm.Exec(userID)
 	if err != nil {
-		fmt.Println(err)
-		return true
+		return constants.ErrorDatabaseDelete, err
 	}
 
-	return false
+	return "", nil
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -170,3 +152,63 @@ func Search() (users []Friend, serverErr bool) {
 // }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+func GetUser(ctx context.Context, userID int) (user User, errType string, err error) {
+	db, err := sql.Open("mysql", mySQLConnection)
+	if err != nil {
+		return user, constants.ErrorDatabaseConnection, err
+	}
+	defer db.Close()
+
+	err = db.QueryRow("select name, email_id, phone_no from users where id = ?", userID).Scan(&user.Name, &user.EmailID, &user.PhoneNo)
+
+	if err != nil {
+		return user, constants.ErrorDatabaseUserNotFound, err
+	}
+
+	user.ID = userID
+	return user, "", err
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+func UpdateUser(ctx context.Context, userID int, name string, phoneNo string, password string) (errType string, err error) {
+	db, err := sql.Open("mysql", mySQLConnection)
+	if err != nil {
+		return constants.ErrorDatabaseConnection, err
+	}
+	defer db.Close()
+
+	queryBuilder := "update users set "
+
+	if name != "" {
+		queryBuilder += fmt.Sprintf("name='%s'", name)
+	}
+
+	if name != "" && phoneNo != "" {
+		queryBuilder += fmt.Sprintf(",phone_no='%s'", phoneNo)
+	} else if phoneNo != "" {
+		queryBuilder += fmt.Sprintf("phone_no='%s'", phoneNo)
+	}
+
+	if (name != "" || phoneNo != "") && password != "" {
+		queryBuilder += fmt.Sprintf(",password='%s'", password)
+	} else if password != "" {
+		queryBuilder += fmt.Sprintf("password='%s'", password)
+	}
+
+	queryBuilder += fmt.Sprintf(" where id = %v", userID)
+
+	result, err := db.ExecContext(ctx, queryBuilder)
+	if err != nil {
+		return constants.ErrorDatabaseUpdate, err
+	}
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return constants.ErrorDatabaseUpdate, err
+	}
+	if rows != 1 {
+		return constants.ErrorDatabaseUpdateZeroRowsAffected, errors.New("Zero rows affected")
+	}
+
+	return "", nil
+}

@@ -6,9 +6,13 @@ const (
 	ErrorAlreadyRegistered   = "AlreadyRegistered"
 	ErrorStatusUnauthorized  = "Unauthorized"
 
-	ErrorDatabaseConnection    = "DatabaseConnection"
-	ErrorDatabaseDuplicate     = "DatabaseDuplicateError"
-	ErrorDatabaseInsert        = "DatabaseInsertError"
-	ErrorDatabaseSelect        = "DatabaseSelectError"
-	ErrorDatabaseEmailNotFound = "DatabaseEmailNotFound"
+	ErrorDatabaseConnection             = "DatabaseConnection"
+	ErrorDatabaseDuplicate              = "DatabaseDuplicateError"
+	ErrorDatabaseInsert                 = "DatabaseInsertError"
+	ErrorDatabaseSelect                 = "DatabaseSelectError"
+	ErrorDatabaseDelete                 = "DatabaseDeleteError"
+	ErrorDatabaseUpdate                 = "DatabaseUpdateError"
+	ErrorDatabaseUpdateZeroRowsAffected = "DatabaseUpdateZeroRowsAffected"
+	ErrorDatabaseEmailNotFound          = "DatabaseEmailNotFound"
+	ErrorDatabaseUserNotFound           = "DatabaseUserNotFound"
 )
