@@ -205,10 +205,11 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 }
 
 type ShowUserResponse struct {
-	ID      int    `json:"id"`
-	Name    string `json:"name"`
-	EmailID string `json:"email"`
-	PhoneNo string `json:"phone_no"`
+	ID      int             `json:"id"`
+	Name    string          `json:"name"`
+	EmailID string          `json:"email"`
+	PhoneNo string          `json:"phone_no"`
+	Friends []models.Friend `json:"friend"`
 }
 
 // ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -276,6 +277,7 @@ func ShowUser(w http.ResponseWriter, r *http.Request) {
 		Name:    user.Name,
 		EmailID: user.EmailID,
 		PhoneNo: user.PhoneNo,
+		Friends: user.Friends,
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -600,4 +602,104 @@ func ActOnFriendRequest(w http.ResponseWriter, r *http.Request) {
 	successResponse.Data = data
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(successResponse)
+}
+
+type RemoveFriendRequest struct {
+	EmailID string `json:"email"`
+}
+
+func RemoveFriend(w http.ResponseWriter, r *http.Request) {
+	ctx := context.Background()
+
+	resp := ErrorResponse{}
+	w.Header().Set("Content-Type", "application/json")
+
+	userIDString := r.Header.Get("user_id")
+
+	if userIDString == "" {
+		resp.Error.Message = "userID missing"
+		resp.Error.Type = constants.ErrorValidation
+		resp.Error.Code = http.StatusUnprocessableEntity
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	userID, err := strconv.Atoi(userIDString)
+
+	if err != nil {
+		resp.Error.Message = "Unable to parse userID"
+		resp.Error.Type = constants.ErrorInternalServerError
+		resp.Error.Code = http.StatusInternalServerError
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	var reqJSON RemoveFriendRequest
+
+	// Req Decode
+	err = json.NewDecoder(r.Body).Decode(&reqJSON)
+	if err != nil {
+		fmt.Println(err)
+		resp.Error.Message = "Unable to Parse Request Body"
+		resp.Error.Type = constants.ErrorInternalServerError
+		resp.Error.Code = http.StatusInternalServerError
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	//validations
+	//Checking all the inputs
+	if reqJSON.EmailID == "" {
+		resp.Error.Message = "One ore more required fields are missing."
+		resp.Error.Type = constants.ErrorValidation
+		resp.Error.Code = http.StatusUnprocessableEntity
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	//validating email-ids
+
+	emailValidation := validEmailID(reqJSON.EmailID)
+	if emailValidation == false {
+		resp.Error.Message = "Invalid email-id"
+		resp.Error.Type = constants.ErrorValidation
+		resp.Error.Code = http.StatusUnprocessableEntity
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	errType, err := models.RemoveFriend(ctx, userID, reqJSON.EmailID)
+	log.Println(errType, err)
+
+	if err != nil {
+		if errType == constants.ErrorDatabaseUserNotFound {
+			resp.Error.Message = "You don't have a friend with this emailID"
+			resp.Error.Type = constants.ErrorDatabaseUserNotFound
+			resp.Error.Code = http.StatusUnprocessableEntity
+			log.Println(resp, err)
+			w.WriteHeader(http.StatusUnprocessableEntity)
+			json.NewEncoder(w).Encode(resp)
+			return
+		} else {
+			resp.Error.Message = "Unable to send friend req"
+			resp.Error.Type = constants.ErrorInternalServerError
+			resp.Error.Code = http.StatusInternalServerError
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(resp)
+			return
+		}
+	}
+
+	// Res Obj
+	successResponse := SignupResponse{
+		Success: true,
+	}
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(successResponse)
+
 }

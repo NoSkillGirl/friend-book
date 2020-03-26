@@ -30,6 +30,7 @@ type User struct {
 	EmailID  string
 	PhoneNo  string
 	Password string
+	Friends  []Friend
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -189,7 +190,51 @@ func GetUser(ctx context.Context, userID int) (user User, errType string, err er
 		return user, constants.ErrorDatabaseUserNotFound, err
 	}
 
+	// get friend ids
+	queryString := fmt.Sprintf("select friend_id from friend_requests where requestor_id = '%v' and status = 'accepted'", userID)
+
+	search, err := db.Query(queryString)
+
+	if err != nil {
+		return user, constants.ErrorDatabaseSelect, err
+	}
+	defer search.Close()
+
+	var friendIDs []string
+	for search.Next() {
+		var friendID string
+		err = search.Scan(&friendID)
+
+		if err != nil {
+			return user, constants.ErrorDatabaseSelect, err
+		}
+		friendIDs = append(friendIDs, friendID)
+	}
+
+	var friends []Friend
+
+	// get friend ids
+	queryString = fmt.Sprintf("select id, name, email_id, phone_no from users where id in ('%s')", strings.Join(friendIDs[:], "','"))
+
+	search, err = db.Query(queryString)
+
+	if err != nil {
+		return user, constants.ErrorDatabaseSelect, err
+	}
+	defer search.Close()
+
+	for search.Next() {
+		var friend Friend
+		err = search.Scan(&friend.ID, &friend.Name, &friend.EmailID, &friend.PhoneNo)
+
+		if err != nil {
+			return user, constants.ErrorDatabaseSelect, err
+		}
+		friends = append(friends, friend)
+	}
+
 	user.ID = userID
+	user.Friends = friends
 	return user, "", err
 }
 
@@ -317,4 +362,34 @@ func ActOnFriendRequest(ctx context.Context, userID int, emailIDs []string, acti
 	}
 
 	return data, "", nil
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+func RemoveFriend(ctx context.Context, userID int, emailID string) (errType string, err error) {
+	db, err := sql.Open("mysql", mySQLConnection)
+	if err != nil {
+		return constants.ErrorDatabaseConnection, err
+	}
+	defer db.Close()
+	var friendID int
+	// get the friend_id
+	err = db.QueryRow("select id from users where email_id = ?", emailID).Scan(&friendID)
+
+	if err != nil {
+		return constants.ErrorDatabaseUserNotFound, err
+	}
+
+	// remove the friend
+	query := fmt.Sprintf("update friend_requests set status = 'rejected' where requestor_id = '%v' and friend_id = '%v'", userID, friendID)
+
+	result, err := db.ExecContext(ctx, query)
+	if err != nil {
+		return constants.ErrorDatabaseUpdate, err
+	}
+
+	_, err = result.RowsAffected()
+	if err != nil {
+		return constants.ErrorDatabaseUpdate, err
+	}
+	return "", nil
 }
