@@ -1,25 +1,26 @@
 package routers
 
 import (
-	"net/http"
-
 	"github.com/NoSkillGirl/friend-book/controllers"
 	"github.com/gorilla/mux"
 )
 
 //UserRoutes - routes
-func UserRoutes() {
-	r := mux.NewRouter()
-	r.HandleFunc("/api/v1.0/", controllers.HealthCheck)
-	r.HandleFunc("/api/v1.0/signup", controllers.UserSignup)
-	r.HandleFunc("/api/v1.0/login", controllers.UserLogin)
-	r.HandleFunc("/api/v1.0/users/{user_id}/update", controllers.UpdateUser)
-	r.HandleFunc("/api/v1.0/users/{user_id}/delete", controllers.DeleteUser)
-	r.HandleFunc("/api/v1.0/users/{user_id}", controllers.ShowUser)
-	r.HandleFunc("/api/v1.0/users/{user_id}/friend_request", controllers.FriendRequest)
-	r.HandleFunc("/api/v1.0/users/{user_id}/search", controllers.Search)
-	// r.HandleFunc("/api/v1.0/users/{user_id}/friends/{friend_id}/delete", controllers.DeleteFriend)
-	r.HandleFunc("/api/v1.0/users/{user_id}/friend_requests", controllers.FriendRequests)
-	// r.HandleFunc("/api/v1.0/users/{user_id}/friends/{friend_id}/response", controllers.FriendRequestResponse)
-	http.Handle("/", r)
+func UserRoutes(apiRouter *mux.Router) {
+
+	v1Router := apiRouter.PathPrefix("/v1.0").Subrouter()
+
+	v1Router.Handle("/me", controllers.IsAuthorized(controllers.ShowUser)).Methods("GET")
+
+	v1Router.Handle("/{user_id}", controllers.IsAuthorized(controllers.ShowUser)).Methods("GET")
+
+	v1Router.Handle("/me/update", controllers.IsAuthorized(controllers.UpdateUser)).Methods("PUT")
+
+	v1Router.Handle("/me/delete", controllers.IsAuthorized(controllers.DeleteUser)).Methods("DELETE")
+
+	v1Router.Handle("/me/friend_request", controllers.IsAuthorized(controllers.FriendRequest)).Methods("POST")
+
+	v1Router.Handle("/me/delete_friend_request", controllers.IsAuthorized(controllers.DeleteUser)).Methods("DELETE")
+
+	// v1Router.HandleFunc("/search", controllers.Search).Methods("GET")
 }
