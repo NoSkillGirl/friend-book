@@ -180,7 +180,6 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&reqJSON)
 	if err != nil {
 		log.Println(err)
-		fmt.Println(err)
 		resp.Error.Message = "Unable to Parse Request Body"
 		resp.Error.Type = constants.ErrorInternalServerError
 		resp.Error.Code = http.StatusInternalServerError
