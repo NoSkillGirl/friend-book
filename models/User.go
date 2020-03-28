@@ -45,17 +45,18 @@ func DeleteUser(ctx context.Context, userID int) (errType string, err error) {
 	}
 	defer db.Close()
 
-	//delete in users table
-	delFormUserTable, err := db.Prepare("delete from users where id=?")
-	_, err = delFormUserTable.Exec(userID)
+	//TODO need to handle rollback conditions
+	//delete in friend request table
+	delFormFriendTable, err := db.Prepare("delete from friend_requests where requestor_id=? or friend_id=?")
+	_, err = delFormFriendTable.Exec(userID, userID)
 	if err != nil {
 		log.Println(err)
 		return constants.ErrorDatabaseDelete, err
 	}
 
-	//delete in friend request table
-	delFormFriendTable, err := db.Prepare("delete from friend_requests where requestor_id=? or friend_id=?")
-	_, err = delFormFriendTable.Exec(userID, userID)
+	//delete in users table
+	delFormUserTable, err := db.Prepare("delete from users where id=?")
+	_, err = delFormUserTable.Exec(userID)
 	if err != nil {
 		log.Println(err)
 		return constants.ErrorDatabaseDelete, err
