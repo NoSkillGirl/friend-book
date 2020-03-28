@@ -24,7 +24,7 @@ var (
 
 const mySQLHost = "localhost"
 
-var mySQLConnection = fmt.Sprintf("root:@tcp(%s)/friend_book", mySQLHost)
+var mySQLConnection = fmt.Sprintf("root:password@tcp(%s)/friend_book", mySQLHost)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 type User struct {
@@ -45,8 +45,17 @@ func DeleteUser(ctx context.Context, userID int) (errType string, err error) {
 	}
 	defer db.Close()
 
-	delForm, err := db.Prepare("delete from users where id=?")
-	_, err = delForm.Exec(userID)
+	//delete in users table
+	delFormUserTable, err := db.Prepare("delete from users where id=?")
+	_, err = delFormUserTable.Exec(userID)
+	if err != nil {
+		log.Println(err)
+		return constants.ErrorDatabaseDelete, err
+	}
+
+	//delete in friend request table
+	delFormFriendTable, err := db.Prepare("delete from friend_requests where requestor_id=? or friend_id=?")
+	_, err = delFormFriendTable.Exec(userID, userID)
 	if err != nil {
 		log.Println(err)
 		return constants.ErrorDatabaseDelete, err
@@ -72,6 +81,19 @@ func FriendRequest(ctx context.Context, userID int, friendemailID string) (errTy
 	if err != nil {
 		log.Println(err)
 		return constants.ErrorDatabaseUserNotFound, err
+	}
+
+	//Checking duplicate entry
+	var count int
+	err = db.QueryRowContext(ctx, "select count(*) from friend_requests where requestor_id=? and friend_id=?", userID, friendID).Scan(&count)
+
+	if err != nil {
+		log.Println(err)
+		return constants.ErrorDatabaseSelect, err
+	}
+
+	if count != 0 {
+		return constants.ErrorDatabaseDuplicate, errors.New("duplicate error")
 	}
 
 	//insert the data in database

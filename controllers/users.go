@@ -381,6 +381,14 @@ func FriendRequest(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusUnprocessableEntity)
 			json.NewEncoder(w).Encode(resp)
 			return
+		} else if errType == constants.ErrorDatabaseDuplicate {
+			resp.Error.Message = "Looks like you have already sent the request to this user."
+			resp.Error.Type = constants.ErrorDatabaseDuplicate
+			resp.Error.Code = http.StatusConflict
+			log.Println(resp, err)
+			w.WriteHeader(http.StatusConflict)
+			json.NewEncoder(w).Encode(resp)
+			return
 		} else {
 			resp.Error.Message = "Unable to send friend req"
 			resp.Error.Type = constants.ErrorInternalServerError
