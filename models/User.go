@@ -128,7 +128,7 @@ type dbUser struct {
 	Password string `json:"password"`
 }
 
-func Search(ctx context.Context, name string, email string, phoneNo string) (users []Friend, errType string, err error) {
+func Search(ctx context.Context, name string, email string, phoneNo string, pageNo int) (users []Friend, errType string, err error) {
 	db, err := gorm.Open("mysql", mySQLConnection)
 	if err != nil {
 		log.Println(err)
@@ -136,25 +136,25 @@ func Search(ctx context.Context, name string, email string, phoneNo string) (use
 	}
 	defer db.Close()
 
+	var dbUsers []User
+
 	q := db.Model(User{})
 
 	if name != "" {
-		q.Where("name like '?'", name)
+		q = q.Where("name LIKE ?", "%"+name+"%")
 	}
 
 	if email != "" {
-		q.Where("email_id like '?'", email)
+		q = q.Where("email_id LIKE ?", "%"+email+"%")
 	}
 
 	if phoneNo != "" {
-		q.Where("phone_no like '?'", phoneNo)
+		q = q.Where("phone_no LIKE ?", "%"+phoneNo+"%")
 	}
 
 	p := paginator.New(adapter.NewGORMAdapter(q), 10)
 
-	p.SetPage(4)
-
-	var dbUsers []User
+	p.SetPage(pageNo)
 
 	if err = p.Results(&dbUsers); err != nil {
 		return users, constants.ErrorDatabaseSelect, err

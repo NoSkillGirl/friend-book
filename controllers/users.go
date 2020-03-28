@@ -422,6 +422,7 @@ func Search(w http.ResponseWriter, r *http.Request) {
 
 	ctx := context.Background()
 	var name, email, phoneNo string
+	page := 1
 	nameArr, ok := r.URL.Query()["name"]
 	if !(!ok || len(nameArr[0]) < 1) {
 		name = nameArr[0]
@@ -437,10 +438,16 @@ func Search(w http.ResponseWriter, r *http.Request) {
 		phoneNo = phoneNoArr[0]
 	}
 
+	pageArr, ok := r.URL.Query()["page"]
+	if !(!ok || len(pageArr[0]) < 1) {
+		pageString := pageArr[0]
+		page, _ = strconv.Atoi(pageString)
+	}
+
 	resp := ErrorResponse{}
 	w.Header().Set("Content-Type", "application/json")
 
-	data, errType, err := models.Search(ctx, name, email, phoneNo)
+	data, errType, err := models.Search(ctx, name, email, phoneNo, page)
 
 	if err != nil {
 		log.Println("Search - ", data, errType, err)
