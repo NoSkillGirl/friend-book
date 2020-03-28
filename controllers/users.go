@@ -438,6 +438,7 @@ func Search(w http.ResponseWriter, r *http.Request) {
 	pageArr, ok := r.URL.Query()["page"]
 	if !(!ok || len(pageArr[0]) < 1) {
 		pageString := pageArr[0]
+		//TODO err handling
 		page, _ = strconv.Atoi(pageString)
 	}
 

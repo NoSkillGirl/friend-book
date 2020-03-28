@@ -352,19 +352,14 @@ func renderHTML(w http.ResponseWriter, templateName string) error {
 	templateData := GetLoginPageTemplateData{
 		StaticDir: "/",
 	}
-	templates := make(map[string]*template.Template)
 
-	if _, ok := templates[templateName]; !ok {
-		tmpl, err := template.New(fmt.Sprintf("%s.tmpl.html", templateName)).ParseFiles(fmt.Sprintf("%s/%s.tmpl.html", dir, templateName))
-		if err != nil {
-		}
-		templates[templateName] = tmpl
+	tmpl, err := template.New(fmt.Sprintf("%s.tmpl.html", templateName)).ParseFiles(fmt.Sprintf("%s/%s.tmpl.html", dir, templateName))
+	//TODO err handling
+	if err != nil {
 	}
 
-	tmpl := templates[templateName]
-
+	//TODO err Handling
 	if err := tmpl.Execute(w, encode(templateData)); err != nil {
-
 	}
 	return nil
 }

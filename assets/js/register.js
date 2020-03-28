@@ -11,12 +11,6 @@
 // }
 
 $(document).ready(function() {
-    $("form_submit").click(function(e) {
-        e.preventDefault();
-        alert("button");
-        console.log($(this).val())
-
-    });
 
     $("#form_submit").click(function(e) {
         e.preventDefault();
