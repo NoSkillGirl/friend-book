@@ -399,7 +399,7 @@ func ActOnFriendRequest(ctx context.Context, userID int, emailIDs []string, acti
 	}
 
 	// check if any friend requests are pending
-	queryString = fmt.Sprintf("select count(*) from friend_requests where status = 'pending' and requestor_id = '%v' and friend_id in ('%s')", userID, strings.Join(friendIDs[:], "','"))
+	queryString = fmt.Sprintf("select count(*) from friend_requests where status = 'pending' and requestor_id in ('%s') and friend_id = '%v'", strings.Join(friendIDs[:], "','"), userID)
 
 	var count int
 	err = db.QueryRow(queryString).Scan(&count)
@@ -414,7 +414,7 @@ func ActOnFriendRequest(ctx context.Context, userID int, emailIDs []string, acti
 	}
 
 	// update friend_requests
-	query := fmt.Sprintf("update friend_requests set status = '%s' where requestor_id = '%v' and friend_id in ('%s')", status, userID, strings.Join(friendIDs[:], "','"))
+	query := fmt.Sprintf("update friend_requests set status = '%s' where requestor_id in ('%s') and friend_id = '%v'", status, strings.Join(friendIDs[:], "','"), userID)
 
 	result, err := db.ExecContext(ctx, query)
 	if err != nil {
